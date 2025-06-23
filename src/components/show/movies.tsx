@@ -6,7 +6,7 @@ import { Movie } from "@/components/type";
 
 type MovieListProps = {
   results: Movie[];
-  onQuickAdd?: (movie: Movie) => void; // optional if you use it
+  onQuickAdd?: (movie: Movie) => void;
   onStartAdd: (movie: Movie) => void;
 };
 
