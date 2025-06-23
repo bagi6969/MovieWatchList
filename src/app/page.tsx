@@ -1,103 +1,209 @@
+"use client";
+
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { searchMovies as fetchMovies } from "../components/search/search";
+import { useMovieContext } from "./context/MovieContext";
+import { MovieList } from "../components/show/movies";
 import Image from "next/image";
+import MovieFormModal from "../components/show/MovieFormModal";
+import { useEffect } from "react";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [visible, setVisible] = useState(false);
+  const [query, setQuery] = useState("");
+  const { setResults } = useMovieContext();
+  const [showForm, setShowForm] = useState(false);
+  const [selectedMovie, setSelectedMovie] = useState(null);
+  const [filterText, setFilterText] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [showStatusOptions, setShowStatusOptions] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  const toggleDiv = () => setVisible(!visible);
+  const [myList, setMyList] = useState([]);
+
+  const onStartAdd = (movie) => {
+    setSelectedMovie(movie);
+    setShowForm(true);
+  };
+
+  const filteredList = myList.filter((movie) => {
+    const matchesTitle = movie.title
+      .toLowerCase()
+      .includes(filterText.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || movie.status === statusFilter;
+    return matchesTitle && matchesStatus;
+  });
+
+  const { results } = useMovieContext();
+
+  const handleAddMovie = (movie) => {
+    const exists = myList.some((m) => m.id === movie.id);
+    if (!exists) {
+      setMyList((prev) => [...prev, movie]);
+    }
+    setShowForm(false);
+    setSelectedMovie(null);
+  };
+
+  const searchMovies = async () => {
+    if (!query) return;
+    const data = await fetchMovies(query);
+    setResults(data);
+  };
+
+  const handleRemove = (id) => {
+    setMyList((prevList) => prevList.filter((movie) => movie.id !== id));
+  };
+
+  useEffect(() => {
+    const saved = localStorage.getItem("myMovieList");
+    if (saved) setMyList(JSON.parse(saved));
+  }, []);
+  useEffect(() => {
+    localStorage.setItem("myMovieList", JSON.stringify(myList));
+  }, [myList]);
+
+  useEffect(() => {
+    const ids = myList.map((m) => m.id);
+    const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i);
+    if (duplicates.length > 0) {
+      console.warn("Duplicate movie IDs:", duplicates);
+    }
+  }, [myList]);
+  return (
+    <div className="w-full h-full p-4">
+      <nav className="w-full">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="font-bold text-2xl">My Watchlist</h1>
+          <div className="text-sm text-gray-600 mt-2 ml-[2px]">
+            {myList.length} Movies
+          </div>
+          <div className="flex gap-2">
+            <button
+              className="w-20 border border-black rounded-[20px] h-10"
+              onClick={toggleDiv}
+            >
+              Search
+            </button>
+            <button
+              className="w-20 border border-black rounded-[20px] h-10"
+              onClick={() => {
+                setSelectedMovie({});
+                setShowForm(true);
+              }}
+            >
+              Add
+            </button>
+          </div>
+        </div>
+
+        <input
+          type="text"
+          placeholder="Search Movies..."
+          value={filterText}
+          onChange={(e) => setFilterText(e.target.value)}
+          className="w-full border border-black px-3 py-2 rounded"
+        />
+        <div className="relative inline-block text-left my-4">
+          <button
+            onClick={() => setShowStatusOptions((prev) => !prev)}
+            className="border border-black px-4 py-2 rounded"
+          >
+            Filter:{" "}
+            {statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
+          </button>
+
+          {showStatusOptions && (
+            <div className="absolute mt-2 bg-white border border-gray-300 rounded shadow-md z-10">
+              {["all", "watched", "watching", "want to watch"].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => {
+                    setStatusFilter(status);
+                    setShowStatusOptions(false);
+                  }}
+                  className="block w-full px-4 py-2 text-left hover:bg-gray-100"
+                >
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </nav>
+
+      {/* USER ADDED MOVIES LIST */}
+      <div className="flex flex-col gap-4 p-4">
+        {filteredList.map((movie) => (
+          <div
+            key={movie.id}
+            className="flex items-start gap-4 border border-gray-400 rounded p-4"
           >
             <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+              src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
+              alt={movie.title || "Movie poster"}
+              className="w-[100px] h-auto rounded"
+              width={100}
+              height={150}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            ...
+            <div>
+              <h2 className="font-bold text-lg">{movie.title}</h2>
+              <p className="text-sm text-gray-600">{movie.release_date} </p>
+
+              <span className="text-sm text-black  rounded-sm">
+                Status: {movie.status}
+              </span>
+              <p className="text-sm text-gray-700">Rating:{movie.rating}⭐</p>
+              <p className="text-sm text-gray-700">Genre: {movie.genre}</p>
+              <br />
+              <button
+                onClick={() => handleRemove(movie.id)}
+                className="mt-2 text-red-500 text-sm"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* SEARCH PANEL */}
+
+      {showForm && selectedMovie && (
+        <MovieFormModal
+          movie={selectedMovie}
+          onSubmit={handleAddMovie}
+          onCancel={() => {
+            setShowForm(false);
+            setSelectedMovie(null);
+          }}
+        />
+      )}
+
+      {visible && (
+        <div className="fixed inset-0 bg-white p-6 border rounded w-[872px] h-[592px] m-auto flex flex-col text-black">
+          <h1 className="text-xl font-bold mb-2">Search Movies</h1>
+          <Input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search for movies..."
+          />
+          <button
+            className="w-20 border border-black rounded-[20px] h-10 mt-2"
+            onClick={searchMovies}
           >
-            Read our docs
-          </a>
+            Search
+          </button>
+
+          <div className="mt-4 overflow-y-auto">
+            <MovieList results={results} onStartAdd={onStartAdd} />
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
     </div>
   );
 }
