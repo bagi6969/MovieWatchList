@@ -1,27 +1,39 @@
 "use client";
-import { useState, useEffect } from "react";
 
-export default function MovieFormModal({ movie, onSubmit, onCancel }) {
-  const [formState, setFormState] = useState({
+import { useState, useEffect } from "react";
+import { Movie } from "@/components/type";
+
+type MovieFormModalProps = {
+  movie: Movie;
+  onSubmit: (movie: Movie) => void;
+  onCancel: () => void;
+};
+
+export default function MovieFormModal({
+  movie,
+  onSubmit,
+  onCancel,
+}: MovieFormModalProps) {
+  const [formState, setFormState] = useState<Omit<Movie, "id">>({
     title: movie.title || "",
     release_date: movie.release_date || "",
-    status: movie.status || "want to watch",
-    rating: movie.rating || 0,
+    status: movie.status || "Want to Watch",
+    rating: movie.rating || "",
     genre: movie.genre || "",
     poster_path: movie.poster_path || "",
+    notes: movie.notes || "",
   });
 
   useEffect(() => {
-    if (movie) {
-      setFormState({
-        title: movie.title || "",
-        year: movie.release_date?.slice(0, 4) || "",
-        genre: movie.genre || "",
-        notes: movie.overview || "",
-        status: "Want to Watch",
-        rating: "",
-      });
-    }
+    setFormState({
+      title: movie.title || "",
+      release_date: movie.release_date || "",
+      status: movie.status || "Want to Watch",
+      rating: movie.rating || "",
+      genre: movie.genre || "",
+      poster_path: movie.poster_path || "",
+      notes: movie.notes || "",
+    });
   }, [movie]);
 
   return (
@@ -41,13 +53,22 @@ export default function MovieFormModal({ movie, onSubmit, onCancel }) {
         <label className="text-sm">Year</label>
         <input
           className="border p-1 rounded"
-          value={formState.year}
-          onChange={(e) => setFormState({ ...formState, year: e.target.value })}
+          value={formState.release_date?.slice(0, 4) || ""}
+          onChange={(e) =>
+            setFormState({
+              ...formState,
+              release_date: e.target.value
+                ? e.target.value + (formState.release_date?.slice(4) || "")
+                : "",
+            })
+          }
+          placeholder="YYYY"
         />
-        <label>Rating</label>
+
+        <label className="text-sm">Rating</label>
         <input
           className="border p-1 rounded"
-          value={formState.rating}
+          value={formState.rating?.toString() || ""}
           placeholder="Eg. 1,2,3,4,5"
           onChange={(e) =>
             setFormState({ ...formState, rating: e.target.value })
@@ -57,7 +78,7 @@ export default function MovieFormModal({ movie, onSubmit, onCancel }) {
         <label className="text-sm">Genre</label>
         <input
           className="border p-1 rounded"
-          value={formState.genre}
+          value={formState.genre || ""}
           onChange={(e) =>
             setFormState({ ...formState, genre: e.target.value })
           }
@@ -66,21 +87,21 @@ export default function MovieFormModal({ movie, onSubmit, onCancel }) {
         <label className="text-sm">Status</label>
         <select
           className="border p-1 rounded"
-          value={formState.status}
+          value={formState.status || ""}
           onChange={(e) =>
             setFormState({ ...formState, status: e.target.value })
           }
         >
-          <option>Want to Watch</option>
-          <option>Watching</option>
-          <option>Watched</option>
+          <option value="want to watch">Want to Watch</option>
+          <option value="watching">Watching</option>
+          <option value="watched">Watched</option>
         </select>
 
         <label className="text-sm">Notes</label>
         <textarea
           className="border p-1 rounded"
           rows={3}
-          value={formState.notes}
+          value={formState.notes || ""}
           onChange={(e) =>
             setFormState({ ...formState, notes: e.target.value })
           }

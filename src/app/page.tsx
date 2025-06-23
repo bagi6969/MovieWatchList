@@ -8,21 +8,34 @@ import { MovieList } from "../components/show/movies";
 import Image from "next/image";
 import MovieFormModal from "../components/show/MovieFormModal";
 import { useEffect } from "react";
+import { Movie } from "@/components/type";
+
+const emptyMovie: Movie = {
+  id: 0,
+  title: "",
+  release_date: "",
+  poster_path: "",
+  overview: "",
+  status: "want to watch",
+  rating: "",
+  genre: "",
+};
 
 export default function Home() {
   const [visible, setVisible] = useState(false);
   const [query, setQuery] = useState("");
   const { setResults } = useMovieContext();
   const [showForm, setShowForm] = useState(false);
-  const [selectedMovie, setSelectedMovie] = useState(null);
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+
   const [filterText, setFilterText] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showStatusOptions, setShowStatusOptions] = useState(false);
 
   const toggleDiv = () => setVisible(!visible);
-  const [myList, setMyList] = useState([]);
+  const [myList, setMyList] = useState<Movie[]>([]);
 
-  const onStartAdd = (movie) => {
+  const onStartAdd = (movie: Movie) => {
     setSelectedMovie(movie);
     setShowForm(true);
   };
@@ -32,13 +45,14 @@ export default function Home() {
       .toLowerCase()
       .includes(filterText.toLowerCase());
     const matchesStatus =
-      statusFilter === "all" || movie.status === statusFilter;
+      statusFilter === "all" ||
+      movie.status?.toLowerCase() === statusFilter.toLowerCase();
     return matchesTitle && matchesStatus;
   });
 
   const { results } = useMovieContext();
 
-  const handleAddMovie = (movie) => {
+  const handleAddMovie = (movie: Movie) => {
     const exists = myList.some((m) => m.id === movie.id);
     if (!exists) {
       setMyList((prev) => [...prev, movie]);
@@ -53,7 +67,7 @@ export default function Home() {
     setResults(data);
   };
 
-  const handleRemove = (id) => {
+  const handleRemove = (id: number) => {
     setMyList((prevList) => prevList.filter((movie) => movie.id !== id));
   };
 
@@ -90,7 +104,7 @@ export default function Home() {
             <button
               className="w-20 border border-black rounded-[20px] h-10"
               onClick={() => {
-                setSelectedMovie({});
+                setSelectedMovie(emptyMovie);
                 setShowForm(true);
               }}
             >
