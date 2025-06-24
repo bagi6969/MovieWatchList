@@ -32,7 +32,7 @@ export function MovieList({ results, onStartAdd }: MovieListProps) {
                   className="bg-green-500 text-white px-3 py-1 rounded"
                   onClick={() => onStartAdd(movie)}
                 >
-                  Edit Before Adding
+                  Add
                 </Button>
               </div>
             </div>
